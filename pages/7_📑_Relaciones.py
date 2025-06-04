@@ -5,7 +5,20 @@ import plotly.graph_objects as go
 
 st.set_page_config(layout="wide")
 
-@st.cache_data(show_spinner=False)
+# Diccionario para traducir meses al español
+MESES_ES = {
+    'January': 'enero', 'February': 'febrero', 'March': 'marzo', 'April': 'abril',
+    'May': 'mayo', 'June': 'junio', 'July': 'julio', 'August': 'agosto',
+    'September': 'septiembre', 'October': 'octubre', 'November': 'noviembre', 'December': 'diciembre'
+}
+
+def traducir_fecha(fecha):
+    for eng, esp in MESES_ES.items():
+        fecha = fecha.replace(eng, esp)
+    return fecha
+
+
+@st.cache_data
 def cargar_datos():
     pob = pd.read_excel('datasets/Poblacion residente por fecha, sexo y edad1971.xlsx', skiprows=5)
     defun = pd.read_excel('datasets/Defunciones1975.xlsx', skiprows=6)
@@ -63,20 +76,16 @@ pob_df_transpuesto_g.columns = ['Años', 'Ambos sexos', 'Hombres', 'Mujeres']
 pob_df_transpuesto_g['Años'] = pd.to_datetime(pob_df_transpuesto_g['Años'], format='%d de %B de %Y', errors='coerce')
 pob_df_transpuesto_g = pob_df_transpuesto_g.set_index('Años')
 
-# Eliminar duplicados para evitar errores de reindexado
-pob_df_transpuesto_g = pob_df_transpuesto_g[~pob_df_transpuesto_g.index.duplicated(keep='first')]
-
 # Unión
 df = pd.concat([naci_df_raw_g, defun_df_raw_g], axis=1)
 df = pd.concat([df, img_df_transpuesto_g], axis=1)
-pob_col = pob_df_transpuesto_g[['Ambos sexos']].reindex(df.index)
-df = pd.concat([df, pob_col], axis=1)
+df = pd.concat([df, pob_df_transpuesto_g[['Ambos sexos']]], axis=1)
 df = df.rename(columns={'Ambos sexos': 'Población'})
 df['Inmigrantes'] = df['Inmigrantes'].fillna(0)
 df = df[df.index >= '1975']
 df.index = pd.to_datetime(df.index)
 
-# Relleno de valores faltantes
+# Relleno de valores
 julio_mask = df.index.month == 7
 df.loc[julio_mask, 'Nacimientos'] = df['Nacimientos'].shift(1)[julio_mask]
 df.loc[julio_mask, 'Defunciones'] = df['Defunciones'].shift(1)[julio_mask]
@@ -88,7 +97,7 @@ df.iloc[-1, df.columns.get_loc('Población')] = df.iloc[-2]['Población']
 
 st.title("📊 Indicadores Demográficos: Bubble Chart y Heatmap")
 st.subheader("🔵 Bubble Chart: Población vs Año (Tamaño = Inmigración, Color = Saldo Natural)")
-st.text("La primera gráfica (Bubble Chart) muestra el estancamiento y leve crecimiento a través de la representación de la inmigración mediante el tamaño de las burbujas y el saldo natural mediante su color.")
+st.text("La primera gráfica (Bubble Chart) muestra de forma más sencilla este estancamiento y leve crecimiento a través de la representación de la inmigración mediante el tamaño de las burbujas y la diferencia entre nacimiento y defunciones (Saldo Natural) mediante su color.")
 
 # Bubble Chart
 df_bubble = df.copy()
@@ -104,24 +113,30 @@ fig_bubble = px.scatter(
     size='Inmigrantes',
     color='Saldo Natural',
     color_continuous_scale='RdBu',
+    labels={'Saldo Natural': 'Saldo Natural'},
+    title=''
 )
 fig_bubble.update_traces(marker=dict(line=dict(width=1, color='black')))
 st.plotly_chart(fig_bubble, use_container_width=True)
 
-# Heatmap
 st.subheader("🌡️ Heatmap de Indicadores Demográficos por Año (Normalizado)")
-st.text("El heatmap muestra cómo las defunciones y la inmigración aumentan con el tiempo, cómo la natalidad disminuye y cómo afecta al crecimiento poblacional.")
+st.text("La segunda gráfica muestra mediante un heatmap como las defunciones y la inmigración aumentan a "
+        "lo largo del tiempo, como la natalidad decrementa y, como se ha comentado a lo largo del trabajo, como estas variables "
+        "afectan al aumento y estancamiento de la población.")
 
+# Heatmap
 df_heatmap = df.copy().astype(float)
 df_heatmap['Año'] = df_heatmap.index.year
 df_heatmap = df_heatmap.groupby('Año').mean()
 
 if not df_heatmap.empty:
     df_heatmap_T = df_heatmap.T
+
     df_heatmap_normalized = df_heatmap_T.apply(
-        lambda row: (row - row.min()) / (row.max() - row.min()) if row.max() != row.min() else 0,
+        lambda row: (row - row.min()) / (row.max() - row.min()) if row.max() != row.min() else row * 0,
         axis=1
     )
+
     df_heatmap_normalized = df_heatmap_normalized.dropna(how='all')
 
     if not df_heatmap_normalized.empty:
@@ -132,7 +147,10 @@ if not df_heatmap.empty:
             colorscale='YlOrBr',
             colorbar=dict(title='Valor Normalizado')
         ))
-        fig_heatmap.update_layout(height=600)
+        fig_heatmap.update_layout(
+            title='',
+            height=600
+        )
         st.plotly_chart(fig_heatmap, use_container_width=True)
     else:
         st.warning("⚠️ El heatmap quedó vacío tras normalizar.")
