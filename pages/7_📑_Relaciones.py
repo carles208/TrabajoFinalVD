@@ -2,10 +2,8 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-import locale
 
 st.set_page_config(layout="wide")
-#locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
 
 
 @st.cache_data
@@ -66,6 +64,12 @@ pob_df_transpuesto_g.columns = ['Años', 'Ambos sexos', 'Hombres', 'Mujeres']
 pob_df_transpuesto_g['Años'] = pd.to_datetime(pob_df_transpuesto_g['Años'], format='%d de %B de %Y', errors='coerce')
 pob_df_transpuesto_g = pob_df_transpuesto_g.set_index('Años')
 
+# Eliminar duplicados de índices para evitar errores
+naci_df_raw_g = naci_df_raw_g[~naci_df_raw_g.index.duplicated()]
+defun_df_raw_g = defun_df_raw_g[~defun_df_raw_g.index.duplicated()]
+img_df_transpuesto_g = img_df_transpuesto_g[~img_df_transpuesto_g.index.duplicated()]
+pob_df_transpuesto_g = pob_df_transpuesto_g[~pob_df_transpuesto_g.index.duplicated()]
+
 # Unión
 df = pd.concat([naci_df_raw_g, defun_df_raw_g], axis=1)
 df = pd.concat([df, img_df_transpuesto_g], axis=1)
@@ -89,6 +93,7 @@ df.iloc[-1, df.columns.get_loc('Población')] = df.iloc[-2]['Población']
 st.title("📊 Indicadores Demográficos: Bubble Chart y Heatmap")
 st.subheader("🔵 Bubble Chart: Población vs Año (Tamaño = Inmigración, Color = Saldo Natural)")
 st.text("La primera gráfica (Bubble Chart) muestra de forma más sencilla este estancamiento y leve crecimiento a través de la representación de la inmigración mediante el tamaño de las burbujas y la diferencia entre nacimiento y defunciones (Saldo Natural) mediante su color.")
+
 # Bubble Chart
 df_bubble = df.copy()
 df_bubble['Año'] = df_bubble.index.year
@@ -110,9 +115,7 @@ fig_bubble.update_traces(marker=dict(line=dict(width=1, color='black')))
 st.plotly_chart(fig_bubble, use_container_width=True)
 
 st.subheader("🌡️ Heatmap de Indicadores Demográficos por Año (Normalizado)")
-st.text("La segunda gráfica muestra mediante un heatmap como las defunciones y la inmigración aumentan a " \
-"lo largo del tiempo, como la natalidad decrementa y, como se ha comentado a lo largo del trabajo, como estas variables " \
-"afectan al aumento y estancamiento de la población.")
+st.text("La segunda gráfica muestra mediante un heatmap cómo las defunciones y la inmigración aumentan a lo largo del tiempo, cómo la natalidad decrementa y, como se ha comentado a lo largo del trabajo, cómo estas variables afectan al aumento y estancamiento de la población.")
 
 # Heatmap
 df_heatmap = df.copy().astype(float)
@@ -125,9 +128,7 @@ if not df_heatmap.empty:
     df_heatmap_normalized = df_heatmap_T.apply(
         lambda row: (row - row.min()) / (row.max() - row.min()) if row.max() != row.min() else row * 0,
         axis=1
-    )
-
-    df_heatmap_normalized = df_heatmap_normalized.dropna(how='all')
+    ).dropna(how='all')
 
     if not df_heatmap_normalized.empty:
         fig_heatmap = go.Figure(data=go.Heatmap(
