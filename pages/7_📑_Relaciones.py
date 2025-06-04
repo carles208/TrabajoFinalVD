@@ -63,16 +63,20 @@ pob_df_transpuesto_g.columns = ['Años', 'Ambos sexos', 'Hombres', 'Mujeres']
 pob_df_transpuesto_g['Años'] = pd.to_datetime(pob_df_transpuesto_g['Años'], format='%d de %B de %Y', errors='coerce')
 pob_df_transpuesto_g = pob_df_transpuesto_g.set_index('Años')
 
+# Eliminar duplicados para evitar errores de reindexado
+pob_df_transpuesto_g = pob_df_transpuesto_g[~pob_df_transpuesto_g.index.duplicated(keep='first')]
+
 # Unión
 df = pd.concat([naci_df_raw_g, defun_df_raw_g], axis=1)
 df = pd.concat([df, img_df_transpuesto_g], axis=1)
-df = pd.concat([df, pob_df_transpuesto_g[['Ambos sexos']]], axis=1)
+pob_col = pob_df_transpuesto_g[['Ambos sexos']].reindex(df.index)
+df = pd.concat([df, pob_col], axis=1)
 df = df.rename(columns={'Ambos sexos': 'Población'})
 df['Inmigrantes'] = df['Inmigrantes'].fillna(0)
 df = df[df.index >= '1975']
 df.index = pd.to_datetime(df.index)
 
-# Relleno de valores
+# Relleno de valores faltantes
 julio_mask = df.index.month == 7
 df.loc[julio_mask, 'Nacimientos'] = df['Nacimientos'].shift(1)[julio_mask]
 df.loc[julio_mask, 'Defunciones'] = df['Defunciones'].shift(1)[julio_mask]
@@ -86,6 +90,7 @@ st.title("📊 Indicadores Demográficos: Bubble Chart y Heatmap")
 st.subheader("🔵 Bubble Chart: Población vs Año (Tamaño = Inmigración, Color = Saldo Natural)")
 st.text("La primera gráfica (Bubble Chart) muestra el estancamiento y leve crecimiento a través de la representación de la inmigración mediante el tamaño de las burbujas y el saldo natural mediante su color.")
 
+# Bubble Chart
 df_bubble = df.copy()
 df_bubble['Año'] = df_bubble.index.year
 df_bubble = df_bubble.groupby('Año').mean().reset_index()
@@ -103,6 +108,7 @@ fig_bubble = px.scatter(
 fig_bubble.update_traces(marker=dict(line=dict(width=1, color='black')))
 st.plotly_chart(fig_bubble, use_container_width=True)
 
+# Heatmap
 st.subheader("🌡️ Heatmap de Indicadores Demográficos por Año (Normalizado)")
 st.text("El heatmap muestra cómo las defunciones y la inmigración aumentan con el tiempo, cómo la natalidad disminuye y cómo afecta al crecimiento poblacional.")
 
