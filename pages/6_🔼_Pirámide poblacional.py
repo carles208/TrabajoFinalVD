@@ -36,7 +36,7 @@ def cargar_y_procesar_piramide(ruta_excel: str):
 ruta_1971 = "datasets/EdadPob1971-PAños.xlsx"
 ruta_2024 = "datasets/EdadPob2024-PAños.xlsx"
 
-st.subheader("Pirámide Poblacional 1971")
+st.subheader("1. Pirámide Poblacional 1971")
 st.text("En cuanto a la pirámide poblacional del año 1971, se puede observar que se cuenta con una población muy " \
 "joven concentrada en la franja de los 0 hasta los 29 años. Esto se puede deber a que, debido a la baja calidad de vida y " \
 "la limitada esperanza de vida en ese periodo, era común que la mayor parte de la población estuviera compuesta por personas " \
@@ -82,7 +82,7 @@ fig1971.update_layout(
 )
 st.plotly_chart(fig1971, use_container_width=True)
 
-st.subheader("Pirámide Poblacional 2024")
+st.subheader("2. Pirámide Poblacional 2024")
 st.text("En la pirámide del año 2024 se observa una clara inversión en la estructura demográfica en comparación " \
 "con la de 1971. La base de la pirámide, correspondiente a las edades más jóvenes (0-14 años), es notablemente más estrecha, " \
 "lo que indica una disminución sostenida de la natalidad en las últimas décadas. Esta tendencia puede deberse al encarecimiento " \
