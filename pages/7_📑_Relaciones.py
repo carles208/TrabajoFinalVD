@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 import locale
 
 st.set_page_config(layout="wide")
-locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
+#locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
 
 
 @st.cache_data
