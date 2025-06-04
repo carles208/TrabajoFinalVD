@@ -5,6 +5,7 @@ import folium
 import json
 import locale
 import altair as alt
+import datetime                            # ← Se añade esta línea
 from streamlit_folium import st_folium
 from branca.colormap import linear, LinearColormap
 
@@ -25,12 +26,21 @@ gdf = gpd.GeoDataFrame(provincias, crs="EPSG:4326")
 
 pob_homb_df = limpiar_indices(pd.read_excel('datasets/PobHomb.xlsx', skiprows=6))
 pob_muj_df = limpiar_indices(pd.read_excel('datasets/PobMuj.xlsx', skiprows=6))
-pob_tot_df = limpiar_indices(pd.read_excel('datasets/PobTot.xlsx', skiprows=6))
+pob_tot_df  = limpiar_indices(pd.read_excel('datasets/PobTot.xlsx',  skiprows=6))
 
 # --- UI ---
 st.title("🏙️ Análisis poblacional general")
 st.subheader("1. Mapa de población por provincia:")
-st.text("Como se puede observar mediante la comparación de los períodos de 1971 frente al 2022 en el mapa, la evolución de la población de España presenta un gran crecimiento. No obstante, este crecimiento no se reparte de forma equilibrada sino que se ha distribuido entre las diferentes comunidades autónomas de Andalucía, Madrid y la Comunidad Valenciana. También se puede observar como las diferentes comunidades autónomas adyacentes a estas han ido perdiendo población de un ritmo alarmante. A este fenómeno poblacional se le suele conocer popularmente como la "España vacía". Este, se explica en que la búsqueda de la población de mejores condiciones laborales, nivel de vida y posibilidad de estudios superiores, desplazan a los individuos desde comunidades más "rurales" hacia las que mayores ciudades contienen.")
+st.text(
+    "Como se puede observar mediante la comparación de los períodos de 1971 frente al 2022 en el "
+    "mapa, la evolución de la población de España presenta un gran crecimiento. No obstante, este "
+    "crecimiento no se reparte de forma equilibrada sino que se ha distribuido entre las diferentes "
+    "comunidades autónomas de Andalucía, Madrid y la Comunidad Valenciana. También se puede observar "
+    "cómo las comunidades adyacentes han ido perdiendo población a un ritmo alarmante. A este "
+    "fenómeno poblacional se le suele conocer como la “España vacía”. Se explica porque la población "
+    "busca mejores condiciones laborales, nivel de vida y posibilidad de estudios superiores, "
+    "desplazándose desde zonas más “rurales” hacia las ciudades más grandes."
+)
 st.sidebar.header("Filtros")
 
 data_columns = pob_tot_df.select_dtypes(include=['float64', 'int']).columns.tolist()
@@ -45,8 +55,11 @@ elif genero == "Mujeres":
 else:
     pob_df = pob_tot_df
 
+# ← Antes de hacer el merge, devolvemos 'Provincia' como columna en lugar de índice:
+pob_df_reset = pob_df.reset_index()  # 'Provincia' pasa a ser columna otra vez
+
 # --- Unir y visualizar ---
-gdf_gen = gdf.merge(pob_df, on='Provincia', how='left').fillna(1)
+gdf_gen = gdf.merge(pob_df_reset, on='Provincia', how='left').fillna(1)
 if selected_column not in gdf_gen.columns:
     st.warning(f"La columna '{selected_column}' no existe para {genero.lower()}.")
     st.stop()
@@ -90,17 +103,23 @@ st_folium(m, use_container_width=True, height=600, returned_objects=[])
 # --- Gráfica temporal ---
 st.subheader("2. Gráfica de población:")
 
-st.text("Como se puede observar en la siguiente gráfica la evolución de la población de España a partir del año 1971 presenta un crecimiento constante hasta la entrada de los 2000 donde, posiblemente por la mejora de la economía y la situación social, se percibe un mayor aumento de la población. Este, termina en 2008 donde, por la crisis surgida, se crea un estancamiento que se mantiene hasta la actualidad. En esta figura también se puede contemplar que a lo largo del crecimiento de la población me mantiene cierta paridad entre el número de mujeres y hombres.")
+st.text(
+    "Como se puede observar en la siguiente gráfica, la evolución de la población de España a partir "
+    "del año 1971 presenta un crecimiento constante hasta la entrada de los 2000 donde, posiblemente "
+    "por la mejora de la economía y la situación social, se percibe un mayor aumento. Esto termina en 2008 "
+    "donde, tras la crisis surgida, se crea un estancamiento que se mantiene hasta la actualidad. En esta "
+    "figura también se puede ver que a lo largo del crecimiento de la población se mantiene cierta paridad "
+    "entre mujeres y hombres."
+)
 
 # Establecer locale español - con manejo de errores para Streamlit Cloud
 def set_spanish_locale():
     locales_to_try = [
-        'es_ES.UTF-8',     # Linux/Mac
-        'Spanish_Spain.1252',  # Windows
-        'es_ES',           # Alternativa
-        'C.UTF-8'          # Fallback
+        'es_ES.UTF-8',        # Linux/Mac
+        'Spanish_Spain.1252', # Windows
+        'es_ES',              # Alternativa
+        'C.UTF-8'             # Fallback
     ]
-    
     for loc in locales_to_try:
         try:
             locale.setlocale(locale.LC_TIME, loc)
@@ -111,12 +130,10 @@ def set_spanish_locale():
 
 # Función para parsear fechas en español sin depender del locale
 def parse_date_safe(date_str):
-    # Diccionario de meses en español
     months = {
-        'enero': 1, 'febrero': 2, 'marzo': 3, 'abril': 4, 'mayo': 5, 'junio': 6,
-        'julio': 7, 'agosto': 8, 'septiembre': 9, 'octubre': 10, 'noviembre': 11, 'diciembre': 12
+        'enero': 1, 'febrero': 2, 'marzo': 3,   'abril': 4,   'mayo': 5,   'junio': 6,
+        'julio': 7, 'agosto': 8, 'septiembre': 9,'octubre': 10,'noviembre': 11,'diciembre': 12
     }
-    
     try:
         # Intentar con locale primero
         if set_spanish_locale():
@@ -129,10 +146,9 @@ def parse_date_safe(date_str):
                 month = months.get(parts[1].lower())
                 year = int(parts[2])
                 if month:
-                    return pd.datetime(year, month, day)
+                    return datetime.datetime(year, month, day)  # ← Se usa datetime.datetime en lugar de pd.datetime
     except:
         pass
-    
     return pd.NaT
 
 if genero == "Total":
