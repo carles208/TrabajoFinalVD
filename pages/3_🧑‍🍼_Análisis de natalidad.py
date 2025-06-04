@@ -214,26 +214,3 @@ try:
 except Exception as e:
     st.error(f"Error al crear los gráficos: {e}")
     st.info("Verifica que los datos de natalidad estén en el formato correcto.")
-
-# --- Información adicional ---
-if st.checkbox("Mostrar información de debug"):
-    st.write("**Información de los datasets:**")
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.write("**Naci Hombres:**")
-        st.write(f"Shape: {naci_homb_df.shape}")
-        st.write(f"Columnas: {len(naci_homb_df.columns)}")
-    
-    with col2:
-        st.write("**Naci Mujeres:**")
-        st.write(f"Shape: {naci_muj_df.shape}")
-        st.write(f"Columnas: {len(naci_muj_df.columns)}")
-    
-    with col3:
-        st.write("**Naci Total:**")
-        st.write(f"Shape: {naci_tot_df.shape}")
-        st.write(f"Columnas: {len(naci_tot_df.columns)}")
-    
-    st.write("**Provincias únicas:**")
-    st.write(sorted(naci_tot_df.index.unique()))

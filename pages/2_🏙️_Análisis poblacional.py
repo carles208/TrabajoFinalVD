@@ -30,7 +30,7 @@ pob_tot_df = limpiar_indices(pd.read_excel('datasets/PobTot.xlsx', skiprows=6))
 # --- UI ---
 st.title("🏙️ Análisis poblacional general")
 st.subheader("1. Mapa de población por provincia:")
-st.text("Como se puede observar mediante la comparación de los períodos de 1971 frente al 2022 en el mapa, la evolución de la población de España presenta un gran crecimiento. No obstante, este crecimiento no se reparte de forma equilibrada sino que se ha distribuido entre las diferentes comunidades autónomas de Andalucía, Madrid y la Comunidad Valenciana. También se puede observar como las diferentes comunidades autónomas adyacentes a estas han ido perdiendo población de un ritmo alarmante. A este fenómeno poblacional se le suele conocer popularmente como la “España vacía”. Este, se explica en que la búsqueda de la población de mejores condiciones laborales, nivel de vida y posibilidad de estudios superiores, desplazan a los individuos desde comunidades más “rurales” hacia las que mayores ciudades contienen.")
+st.text("Como se puede observar mediante la comparación de los períodos de 1971 frente al 2022 en el mapa, la evolución de la población de España presenta un gran crecimiento. No obstante, este crecimiento no se reparte de forma equilibrada sino que se ha distribuido entre las diferentes comunidades autónomas de Andalucía, Madrid y la Comunidad Valenciana. También se puede observar como las diferentes comunidades autónomas adyacentes a estas han ido perdiendo población de un ritmo alarmante. A este fenómeno poblacional se le suele conocer popularmente como la "España vacía". Este, se explica en que la búsqueda de la población de mejores condiciones laborales, nivel de vida y posibilidad de estudios superiores, desplazan a los individuos desde comunidades más "rurales" hacia las que mayores ciudades contienen.")
 st.sidebar.header("Filtros")
 
 data_columns = pob_tot_df.select_dtypes(include=['float64', 'int']).columns.tolist()
@@ -92,11 +92,48 @@ st.subheader("2. Gráfica de población:")
 
 st.text("Como se puede observar en la siguiente gráfica la evolución de la población de España a partir del año 1971 presenta un crecimiento constante hasta la entrada de los 2000 donde, posiblemente por la mejora de la economía y la situación social, se percibe un mayor aumento de la población. Este, termina en 2008 donde, por la crisis surgida, se crea un estancamiento que se mantiene hasta la actualidad. En esta figura también se puede contemplar que a lo largo del crecimiento de la población me mantiene cierta paridad entre el número de mujeres y hombres.")
 
-# Establecer locale español para que pandas reconozca meses en español
-try:
-    locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')  # Linux/Mac
-except:
-    locale.setlocale(locale.LC_TIME, 'Spanish_Spain.1252')  # Windows
+# Establecer locale español - con manejo de errores para Streamlit Cloud
+def set_spanish_locale():
+    locales_to_try = [
+        'es_ES.UTF-8',     # Linux/Mac
+        'Spanish_Spain.1252',  # Windows
+        'es_ES',           # Alternativa
+        'C.UTF-8'          # Fallback
+    ]
+    
+    for loc in locales_to_try:
+        try:
+            locale.setlocale(locale.LC_TIME, loc)
+            return True
+        except:
+            continue
+    return False
+
+# Función para parsear fechas en español sin depender del locale
+def parse_date_safe(date_str):
+    # Diccionario de meses en español
+    months = {
+        'enero': 1, 'febrero': 2, 'marzo': 3, 'abril': 4, 'mayo': 5, 'junio': 6,
+        'julio': 7, 'agosto': 8, 'septiembre': 9, 'octubre': 10, 'noviembre': 11, 'diciembre': 12
+    }
+    
+    try:
+        # Intentar con locale primero
+        if set_spanish_locale():
+            return pd.to_datetime(date_str, format="%d de %B de %Y", errors="coerce")
+        else:
+            # Fallback: parseo manual
+            parts = date_str.split(' de ')
+            if len(parts) == 3:
+                day = int(parts[0])
+                month = months.get(parts[1].lower())
+                year = int(parts[2])
+                if month:
+                    return pd.datetime(year, month, day)
+    except:
+        pass
+    
+    return pd.NaT
 
 if genero == "Total":
     # Stacked area chart
@@ -116,7 +153,7 @@ if genero == "Total":
     })
 
     df_stacked = pd.concat([df_h, df_m])
-    df_stacked["Fecha"] = pd.to_datetime(df_stacked["Fecha"], format="%d de %B de %Y", errors="coerce")
+    df_stacked["Fecha"] = df_stacked["Fecha"].apply(parse_date_safe)
     df_stacked = df_stacked.dropna().sort_values("Fecha")
 
     chart = alt.Chart(df_stacked).mark_area().encode(
@@ -136,7 +173,7 @@ else:
         "Población": serie_evolucion.values
     })
 
-    df_evolucion["Fecha"] = pd.to_datetime(df_evolucion["Fecha"], format="%d de %B de %Y", errors="coerce")
+    df_evolucion["Fecha"] = df_evolucion["Fecha"].apply(parse_date_safe)
     df_evolucion = df_evolucion.dropna().sort_values("Fecha").set_index("Fecha")
 
     st.line_chart(df_evolucion)
