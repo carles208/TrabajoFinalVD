@@ -3,7 +3,9 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-# Diccionario y función para mostrar fechas en español
+st.set_page_config(layout="wide")
+
+# Diccionario para mostrar fechas en español
 MESES_ES = {
     1: "enero", 2: "febrero", 3: "marzo", 4: "abril", 5: "mayo", 6: "junio",
     7: "julio", 8: "agosto", 9: "septiembre", 10: "octubre", 11: "noviembre", 12: "diciembre"
@@ -73,11 +75,10 @@ pob_df_transpuesto_g.columns = ['Años', 'Ambos sexos', 'Hombres', 'Mujeres']
 pob_df_transpuesto_g['Años'] = pd.to_datetime(pob_df_transpuesto_g['Años'], format='%d de %B de %Y', errors='coerce')
 pob_df_transpuesto_g = pob_df_transpuesto_g.set_index('Años')
 
-# Eliminar duplicados de índices para evitar errores
-naci_df_raw_g = naci_df_raw_g[~naci_df_raw_g.index.duplicated()]
-defun_df_raw_g = defun_df_raw_g[~defun_df_raw_g.index.duplicated()]
-img_df_transpuesto_g = img_df_transpuesto_g[~img_df_transpuesto_g.index.duplicated()]
-pob_df_transpuesto_g = pob_df_transpuesto_g[~pob_df_transpuesto_g.index.duplicated()]
+# Eliminar duplicados de índices
+for df_temp in [naci_df_raw_g, defun_df_raw_g, img_df_transpuesto_g, pob_df_transpuesto_g]:
+    df_temp.drop_duplicates(inplace=True)
+    df_temp.dropna(inplace=True)
 
 # Unión
 df = pd.concat([naci_df_raw_g, defun_df_raw_g], axis=1)
@@ -101,34 +102,36 @@ df.iloc[-1, df.columns.get_loc('Población')] = df.iloc[-2]['Población']
 
 st.title("📊 Indicadores Demográficos: Bubble Chart y Heatmap")
 
-# Mostrar última fecha en español
-ultimo = df.index.max()
-st.markdown(f"**Último dato disponible:** {fecha_es(ultimo)}")
+# Mostrar última fecha formateada
+st.markdown(f"**Último dato disponible:** {fecha_es(df.index.max())}")
 
 st.subheader("🔵 Bubble Chart: Población vs Año (Tamaño = Inmigración, Color = Saldo Natural)")
-st.text("La primera gráfica (Bubble Chart) muestra el estancamiento y leve crecimiento poblacional mediante el tamaño (inmigración) y color (saldo natural).")
+st.text("Este gráfico representa la población por año, el tamaño indica inmigración, y el color el saldo natural.")
 
 df_bubble = df.copy()
 df_bubble['Año'] = df_bubble.index.year
 df_bubble = df_bubble.groupby('Año').mean().reset_index()
-df_bubble = df_bubble[df_bubble['Año'] >= 2005]
 df_bubble['Saldo Natural'] = df_bubble['Nacimientos'] - df_bubble['Defunciones']
+df_bubble = df_bubble.dropna(subset=['Año', 'Población', 'Inmigrantes', 'Saldo Natural'])
 
-fig_bubble = px.scatter(
-    df_bubble,
-    x='Año',
-    y='Población',
-    size='Inmigrantes',
-    color='Saldo Natural',
-    color_continuous_scale='RdBu',
-    labels={'Saldo Natural': 'Saldo Natural'},
-    title=''
-)
-fig_bubble.update_traces(marker=dict(line=dict(width=1, color='black')))
-st.plotly_chart(fig_bubble, use_container_width=True)
+if not df_bubble.empty:
+    fig_bubble = px.scatter(
+        df_bubble,
+        x='Año',
+        y='Población',
+        size='Inmigrantes',
+        color='Saldo Natural',
+        color_continuous_scale='RdBu',
+        labels={'Saldo Natural': 'Saldo Natural'},
+        title=''
+    )
+    fig_bubble.update_traces(marker=dict(line=dict(width=1, color='black')))
+    st.plotly_chart(fig_bubble, use_container_width=True)
+else:
+    st.warning("⚠️ No hay datos para mostrar el bubble chart.")
 
 st.subheader("🌡️ Heatmap de Indicadores Demográficos por Año (Normalizado)")
-st.text("Esta gráfica permite ver cómo cambian los indicadores clave (natalidad, defunciones, inmigración, población) a lo largo del tiempo.")
+st.text("Este gráfico muestra la evolución normalizada de nacimientos, defunciones, inmigración y población por año.")
 
 df_heatmap = df.copy().astype(float)
 df_heatmap['Año'] = df_heatmap.index.year
