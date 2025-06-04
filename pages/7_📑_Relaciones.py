@@ -3,7 +3,16 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-st.set_page_config(layout="wide")
+# Diccionario y función para mostrar fechas en español
+MESES_ES = {
+    1: "enero", 2: "febrero", 3: "marzo", 4: "abril", 5: "mayo", 6: "junio",
+    7: "julio", 8: "agosto", 9: "septiembre", 10: "octubre", 11: "noviembre", 12: "diciembre"
+}
+
+def fecha_es(dt):
+    if pd.isna(dt):
+        return ""
+    return f"{MESES_ES[dt.month]} de {dt.year}"
 
 
 @st.cache_data
@@ -91,10 +100,14 @@ df.iloc[-1, df.columns.get_loc('Población')] = df.iloc[-2]['Población']
 # ---------------------------
 
 st.title("📊 Indicadores Demográficos: Bubble Chart y Heatmap")
-st.subheader("🔵 Bubble Chart: Población vs Año (Tamaño = Inmigración, Color = Saldo Natural)")
-st.text("La primera gráfica (Bubble Chart) muestra de forma más sencilla este estancamiento y leve crecimiento a través de la representación de la inmigración mediante el tamaño de las burbujas y la diferencia entre nacimiento y defunciones (Saldo Natural) mediante su color.")
 
-# Bubble Chart
+# Mostrar última fecha en español
+ultimo = df.index.max()
+st.markdown(f"**Último dato disponible:** {fecha_es(ultimo)}")
+
+st.subheader("🔵 Bubble Chart: Población vs Año (Tamaño = Inmigración, Color = Saldo Natural)")
+st.text("La primera gráfica (Bubble Chart) muestra el estancamiento y leve crecimiento poblacional mediante el tamaño (inmigración) y color (saldo natural).")
+
 df_bubble = df.copy()
 df_bubble['Año'] = df_bubble.index.year
 df_bubble = df_bubble.groupby('Año').mean().reset_index()
@@ -115,16 +128,14 @@ fig_bubble.update_traces(marker=dict(line=dict(width=1, color='black')))
 st.plotly_chart(fig_bubble, use_container_width=True)
 
 st.subheader("🌡️ Heatmap de Indicadores Demográficos por Año (Normalizado)")
-st.text("La segunda gráfica muestra mediante un heatmap cómo las defunciones y la inmigración aumentan a lo largo del tiempo, cómo la natalidad decrementa y, como se ha comentado a lo largo del trabajo, cómo estas variables afectan al aumento y estancamiento de la población.")
+st.text("Esta gráfica permite ver cómo cambian los indicadores clave (natalidad, defunciones, inmigración, población) a lo largo del tiempo.")
 
-# Heatmap
 df_heatmap = df.copy().astype(float)
 df_heatmap['Año'] = df_heatmap.index.year
 df_heatmap = df_heatmap.groupby('Año').mean()
 
 if not df_heatmap.empty:
     df_heatmap_T = df_heatmap.T
-
     df_heatmap_normalized = df_heatmap_T.apply(
         lambda row: (row - row.min()) / (row.max() - row.min()) if row.max() != row.min() else row * 0,
         axis=1
@@ -138,10 +149,7 @@ if not df_heatmap.empty:
             colorscale='YlOrBr',
             colorbar=dict(title='Valor Normalizado')
         ))
-        fig_heatmap.update_layout(
-            title='',
-            height=600
-        )
+        fig_heatmap.update_layout(title='', height=600)
         st.plotly_chart(fig_heatmap, use_container_width=True)
     else:
         st.warning("⚠️ El heatmap quedó vacío tras normalizar.")
