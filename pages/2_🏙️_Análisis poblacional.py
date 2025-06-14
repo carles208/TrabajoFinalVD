@@ -8,7 +8,6 @@ from streamlit_folium import st_folium
 from branca.colormap import linear, LinearColormap
 from datetime import datetime
 
-# --- Función de limpieza ---
 def limpiar_indices(df):
     df.columns.values[0] = 'Provincia'
     df['Provincia'] = df['Provincia'].str.replace(r'^\d+\s*', '', regex=True).str.strip()
@@ -18,31 +17,7 @@ def limpiar_indices(df):
     df.index = df.index.map(lambda x: ' '.join(x.split(', ')[::-1]) if ', ' in x else x)
     return df
 
-# --- Mapeo manual de meses en español a número ---
-month_map = {
-    'enero': '01', 'febrero': '02', 'marzo': '03', 'abril': '04',
-    'mayo': '05', 'junio': '06', 'julio': '07', 'agosto': '08',
-    'septiembre': '09', 'octubre': '10', 'noviembre': '11', 'diciembre': '12'
-}
 
-def parse_fecha(fecha_str):
-    """
-    Convierte cadenas como '1 de enero de 1971' a datetime(1971, 1, 1).
-    Si no encaja en el formato esperado, devuelve pd.NaT.
-    """
-    try:
-        partes = fecha_str.lower().split(' de ')
-        # Se espera: [día, mes, año]
-        if len(partes) == 3:
-            dia = partes[0].zfill(2)          # Ej. "1" -> "01"
-            mes_nombre = partes[1].strip()    # Ej. "enero"
-            año = partes[2].strip()           # Ej. "1971"
-            mes_num = month_map.get(mes_nombre)
-            if mes_num:
-                return datetime.strptime(f"{año}-{mes_num}-{dia}", "%Y-%m-%d")
-    except:
-        pass
-    return pd.NaT
 
 # --- Cargar datos ---
 provincias = gpd.read_file('datasets/recintos_provinciales_inspire_peninbal_etrs89.shp').to_crs("EPSG:4326")
