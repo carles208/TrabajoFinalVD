@@ -3,7 +3,7 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 
-st.set_page_config(page_title="Pirámides Poblacionales España", layout="wide")
+st.set_page_config(page_title="Pirámides Poblacionales España")
 st.title("🔼 Pirámides Poblacionales de España")
 
 @st.cache_data

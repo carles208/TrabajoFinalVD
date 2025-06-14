@@ -43,19 +43,7 @@ def cargar_datos():
         return gdf, naci_homb_df, naci_muj_df, naci_tot_df
         
     except FileNotFoundError as e:
-        st.error(f"Error al cargar archivos: {e}")
-        st.info("Asegúrate de que todos los archivos estén en la carpeta 'datasets':")
-        st.code("""
-        datasets/
-        ├── recintos_provinciales_inspire_peninbal_etrs89.shp (y archivos asociados)
-        ├── NaciHomb.xlsx
-        ├── NaciMuj.xlsx
-        └── NaciTot.xlsx
-        """)
-        return None, None, None, None
-    except Exception as e:
-        st.error(f"Error inesperado: {e}")
-        return None, None, None, None
+        print("No se ha encontrado algún fichero")
 
 # --- Cargar datos ---
 datos = cargar_datos()
@@ -64,10 +52,6 @@ if datos[0] is None:
 
 gdf, naci_homb_df, naci_muj_df, naci_tot_df = datos
 
-# Verificar que los datos se cargaron correctamente
-if any(df is None or df.empty for df in [naci_homb_df, naci_muj_df, naci_tot_df]):
-    st.error("Error: Algunos datasets están vacíos")
-    st.stop()
 
 # --- UI ---
 st.title("🧑‍🍼 Análisis de natalidad")

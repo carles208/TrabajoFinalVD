@@ -62,9 +62,9 @@ st.text(
     "no se reparte de forma equilibrada sino que se ha distribuido entre las diferentes comunidades "
     "autónomas de Andalucía, Madrid y la Comunidad Valenciana. También se puede observar como las "
     "diferentes comunidades autónomas adyacentes a estas han ido perdiendo población de un ritmo "
-    "alarmante. A este fenómeno poblacional se le suele conocer popularmente como la “España vacía”. "
+    "alarmante. A este fenómeno poblacional se le suele conocer popularmente como la 'España vacía'. "
     "Este, se explica en que la búsqueda de la población de mejores condiciones laborales, nivel de vida "
-    "y posibilidad de estudios superiores, desplazan a los individuos desde comunidades más “rurales” "
+    "y posibilidad de estudios superiores, desplazan a los individuos desde comunidades más 'rurales' "
     "hacia las que mayores ciudades contienen."
 )
 st.sidebar.header("Filtros")
@@ -121,10 +121,17 @@ folium.GeoJson(
 
 colormap.options = {"position": "bottomleft"}
 colormap.add_to(m)
-st_folium(m, use_container_width=True, height=600, returned_objects=[])
+
+# Crear un placeholder para el mapa con altura fija
+map_container = st.empty()
+with map_container:
+    st_folium(m, use_container_width=True, height=600, returned_objects=[], key=f"map_{selected_column}_{genero}")
 
 # --- Gráfica temporal ---
-st.subheader("2. Gráfica de población:")
+# Crear un contenedor con posición fija para la segunda sección
+chart_anchor = st.empty()
+with chart_anchor:
+    st.subheader("2. Gráfica de población:")
 
 st.text(
     "Como se puede observar en la siguiente gráfica la evolución de la población de España a partir del "
@@ -135,47 +142,70 @@ st.text(
     "cierta paridad entre el número de mujeres y hombres."
 )
 
-if genero == "Total":
-    # Stacked area chart
-    serie_h = pob_homb_df.sum(axis=0)
-    serie_m = pob_muj_df.sum(axis=0)
+# Placeholder para el gráfico con clave única para evitar re-renderizado
+chart_container = st.empty()
 
-    df_h = pd.DataFrame({
-        "Fecha": serie_h.index.astype(str),
-        "Población": serie_h.values,
-        "Sexo": "Hombres"
-    })
+with chart_container:
+    if genero == "Total":
+        # Stacked area chart
+        serie_h = pob_homb_df.sum(axis=0)
+        serie_m = pob_muj_df.sum(axis=0)
 
-    df_m = pd.DataFrame({
-        "Fecha": serie_m.index.astype(str),
-        "Población": serie_m.values,
-        "Sexo": "Mujeres"
-    })
+        df_h = pd.DataFrame({
+            "Fecha": serie_h.index.astype(str),
+            "Población": serie_h.values,
+            "Sexo": "Hombres"
+        })
 
-    df_stacked = pd.concat([df_h, df_m])
-    # Convertir cada cadena de fecha usando parse_fecha en vez de depender de locale
-    df_stacked["Fecha"] = df_stacked["Fecha"].map(parse_fecha)
-    df_stacked = df_stacked.dropna().sort_values("Fecha")
+        df_m = pd.DataFrame({
+            "Fecha": serie_m.index.astype(str),
+            "Población": serie_m.values,
+            "Sexo": "Mujeres"
+        })
 
-    chart = alt.Chart(df_stacked).mark_area().encode(
-        x=alt.X("Fecha:T", title="Fecha"),
-        y=alt.Y("Población:Q", stack="zero"),
-        color=alt.Color("Sexo:N", scale=alt.Scale(scheme='tableau10')),
-        tooltip=["Fecha:T", "Sexo:N", "Población:Q"]
-    ).properties(width=700, height=400).interactive()
+        df_stacked = pd.concat([df_h, df_m])
+        # Convertir cada cadena de fecha usando parse_fecha en vez de depender de locale
+        df_stacked["Fecha"] = df_stacked["Fecha"].map(parse_fecha)
+        df_stacked = df_stacked.dropna().sort_values("Fecha")
 
-    st.altair_chart(chart, use_container_width=True)
+        chart = alt.Chart(df_stacked).mark_area().encode(
+            x=alt.X("Fecha:T", title="Fecha"),
+            y=alt.Y("Población:Q", stack="zero"),
+            color=alt.Color("Sexo:N", scale=alt.Scale(scheme='tableau10')),
+            tooltip=["Fecha:T", "Sexo:N", "Población:Q"]
+        ).properties(width=700, height=400).interactive()
 
-else:
-    # Línea individual para hombres o mujeres
-    serie_evolucion = pob_df.sum(axis=0)
-    df_evolucion = pd.DataFrame({
-        "Fecha": serie_evolucion.index.astype(str),
-        "Población": serie_evolucion.values
-    })
+        st.altair_chart(chart, use_container_width=True, key=f"chart_{genero}")
 
-    # Convertir con parse_fecha
-    df_evolucion["Fecha"] = df_evolucion["Fecha"].map(parse_fecha)
-    df_evolucion = df_evolucion.dropna().sort_values("Fecha").set_index("Fecha")
+    else:
+        # Línea individual para hombres o mujeres
+        serie_evolucion = pob_df.sum(axis=0)
+        df_evolucion = pd.DataFrame({
+            "Fecha": serie_evolucion.index.astype(str),
+            "Población": serie_evolucion.values
+        })
 
-    st.line_chart(df_evolucion)
+        # Convertir con parse_fecha
+        df_evolucion["Fecha"] = df_evolucion["Fecha"].map(parse_fecha)
+        df_evolucion = df_evolucion.dropna().sort_values("Fecha").set_index("Fecha")
+
+        st.line_chart(df_evolucion)
+
+# CSS para prevenir saltos de página
+st.markdown("""
+<style>
+    .main .block-container {
+        padding-top: 1rem;
+    }
+    
+    /* Evitar saltos en el scroll */
+    .stPlotlyChart, .stAltairChart {
+        position: relative;
+    }
+    
+    /* Mantener altura consistente */
+    iframe[title="streamlit_folium.st_folium"] {
+        height: 600px !important;
+    }
+</style>
+""", unsafe_allow_html=True)

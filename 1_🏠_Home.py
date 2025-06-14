@@ -24,7 +24,13 @@ st.markdown("""
 3. **Edad 2022**: Dataset de 51 filas y 100 columnas que contiene la cifra de personas con cierta edad en 2022 diferenciada por provincias.  
 4. **Nacimientos 2022**: Dataset de 51 filas que contiene la cantidad de nacimientos organizada por provincias en el año 2022.  
 5. **Población residente por provincia en 1971**: Dataset con 51 filas con la población española clasificada por provincia en 1971.  
-6. **Población residente por provincia en 2022**: Dataset con 51 filas con la población española clasificada por provincia en 2022.  
+6. **Población residente por provincia en 2022**: Dataset con 51 filas con la población española clasificada por provincia en 2022.
+7. **Defunciones1975**: Dataset de 147 columnas y 54 filas que contiene la cantidad de defunciones organizada por provincias y sexos desde el 1975 hasta el 2023.
+8. **EdadPob1971-PAños**: Dataset de 107 filas y 2 columnas que contiene la cifra de personas con cierta edad en el 1971 diferenciando entre hombres y mujeres.
+9. **EdadPob2024-PAños**: Dataset de 107 filas y 2 columnas que contiene la cifra de personas con cierta edad en el 2024 diferenciando entre hombres y mujeres.
+10. **Flujo de inmigración procedente del extranjero por año, sexo y edad2008**: Dataset con 276 filas y 14 columnas que representa la cantidad de inmigración clasificada por edad y sexo desde el 2008 hasta el 2021.
+11. **Nacimientos1975**: Dataset de 147 columnas y 54 filas que contiene la cantidad de nacimientos organizada por provincias y sexos desde el 1975 hasta el 2023.
+12. **Población residente por fecha, sexo y edad1971**: Dataset de 104 columnas y 327 filas con la población española clasificada por sexo y edad desde el 1971 hasta el 2022.
 """)
 
 

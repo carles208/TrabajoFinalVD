@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-st.set_page_config(layout="wide")
+
 
 # Función para parsear fechas en español sin locale
 def parse_spanish_date(date_str):
