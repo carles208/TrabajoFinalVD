@@ -12,8 +12,6 @@ inmig_file_path = 'datasets/Flujo de inmigracion procedente del extranjero por a
 
 inmig_df_raw = pd.read_excel(inmig_file_path, sheet_name=0, skiprows=5)
 
-''' 2.1.3. Tabla de inmigraciones '''
-
 # Extraer fechas de la fila 0
 fechas = inmig_df_raw.iloc[0, 1:].tolist()
 inmig_df_raw.columns = ['Sexo/Grupo de edad'] + fechas
