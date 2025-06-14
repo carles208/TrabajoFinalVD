@@ -14,7 +14,6 @@ def parse_spanish_date(date_str):
     }
     
     try:
-        # Formato esperado: "1 de enero de 2020"
         parts = str(date_str).lower().split(' de ')
         if len(parts) == 3:
             day = parts[0].strip()

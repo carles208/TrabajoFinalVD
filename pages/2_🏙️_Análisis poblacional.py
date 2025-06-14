@@ -17,7 +17,25 @@ def limpiar_indices(df):
     df.index = df.index.map(lambda x: ' '.join(x.split(', ')[::-1]) if ', ' in x else x)
     return df
 
+month_map = {
+    'enero': '01', 'febrero': '02', 'marzo': '03', 'abril': '04',
+    'mayo': '05', 'junio': '06', 'julio': '07', 'agosto': '08',
+    'septiembre': '09', 'octubre': '10', 'noviembre': '11', 'diciembre': '12'
+}
 
+def parse_fecha(fecha_str):
+    try:
+        partes = fecha_str.lower().split(' de ')
+        if len(partes) == 3:
+            dia = partes[0].zfill(2)         
+            mes_nombre = partes[1].strip()    
+            año = partes[2].strip()          
+            mes_num = month_map.get(mes_nombre)
+            if mes_num:
+                return datetime.strptime(f"{año}-{mes_num}-{dia}", "%Y-%m-%d")
+    except:
+        pass
+    return pd.NaT
 
 # --- Cargar datos ---
 provincias = gpd.read_file('datasets/recintos_provinciales_inspire_peninbal_etrs89.shp').to_crs("EPSG:4326")
@@ -48,7 +66,6 @@ data_columns = pob_tot_df.select_dtypes(include=['float64', 'int']).columns.toli
 selected_column = st.sidebar.selectbox("Selecciona una fecha", data_columns)
 genero = st.sidebar.radio("Selecciona grupo poblacional", ["Total", "Hombres", "Mujeres"], index=0)
 
-# --- Dataset seleccionado ---
 if genero == "Hombres":
     pob_df = pob_homb_df
 elif genero == "Mujeres":
@@ -56,7 +73,6 @@ elif genero == "Mujeres":
 else:
     pob_df = pob_tot_df
 
-# --- Unir y visualizar ---
 gdf_gen = gdf.merge(pob_df, on='Provincia', how='left').fillna(1)
 if selected_column not in gdf_gen.columns:
     st.warning(f"La columna '{selected_column}' no existe para {genero.lower()}.")
@@ -97,13 +113,10 @@ folium.GeoJson(
 colormap.options = {"position": "bottomleft"}
 colormap.add_to(m)
 
-# Crear un placeholder para el mapa con altura fija
 map_container = st.empty()
 with map_container:
     st_folium(m, use_container_width=True, height=600, returned_objects=[], key=f"map_{selected_column}_{genero}")
 
-# --- Gráfica temporal ---
-# Crear un contenedor con posición fija para la segunda sección
 chart_anchor = st.empty()
 with chart_anchor:
     st.subheader("2. Gráfica de población:")
@@ -117,7 +130,6 @@ st.text(
     "cierta paridad entre el número de mujeres y hombres."
 )
 
-# Placeholder para el gráfico con clave única para evitar re-renderizado
 chart_container = st.empty()
 
 with chart_container:
@@ -139,7 +151,7 @@ with chart_container:
         })
 
         df_stacked = pd.concat([df_h, df_m])
-        # Convertir cada cadena de fecha usando parse_fecha en vez de depender de locale
+
         df_stacked["Fecha"] = df_stacked["Fecha"].map(parse_fecha)
         df_stacked = df_stacked.dropna().sort_values("Fecha")
 
@@ -153,20 +165,17 @@ with chart_container:
         st.altair_chart(chart, use_container_width=True, key=f"chart_{genero}")
 
     else:
-        # Línea individual para hombres o mujeres
         serie_evolucion = pob_df.sum(axis=0)
         df_evolucion = pd.DataFrame({
             "Fecha": serie_evolucion.index.astype(str),
             "Población": serie_evolucion.values
         })
 
-        # Convertir con parse_fecha
         df_evolucion["Fecha"] = df_evolucion["Fecha"].map(parse_fecha)
         df_evolucion = df_evolucion.dropna().sort_values("Fecha").set_index("Fecha")
 
         st.line_chart(df_evolucion)
 
-# CSS para prevenir saltos de página
 st.markdown("""
 <style>
     .main .block-container {

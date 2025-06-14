@@ -7,9 +7,7 @@ import altair as alt
 from streamlit_folium import st_folium
 from branca.colormap import linear, LinearColormap
 
-# --- Función de limpieza ---
 def limpiar_indices(df):
-    """Limpia y procesa los índices del DataFrame"""
     if df is None or df.empty:
         return df
     
@@ -23,7 +21,6 @@ def limpiar_indices(df):
 
 @st.cache_data
 def cargar_datos():
-    """Carga todos los datasets con manejo de errores"""
     try:
         # Cargar datos geográficos
         provincias = gpd.read_file('datasets/recintos_provinciales_inspire_peninbal_etrs89.shp').to_crs("EPSG:4326")
@@ -68,7 +65,6 @@ data_columns = [str(col) for col in naci_tot_df.select_dtypes(include=['float64'
 selected_column = st.sidebar.selectbox("Selecciona una fecha", sorted(data_columns, reverse=True))
 genero = st.sidebar.radio("Selecciona grupo poblacional", ["Total", "Hombres", "Mujeres"], index=0)
 
-# --- Dataset seleccionado ---
 if genero == "Hombres":
     pob_df = naci_homb_df
 elif genero == "Mujeres":
@@ -84,7 +80,6 @@ try:
         st.warning(f"La columna '{selected_column}' no existe para {genero.lower()}.")
         st.stop()
 
-    # Verificar que hay datos válidos
     if gdf_gen[selected_column].isna().all():
         st.warning("No hay datos válidos para mostrar en el mapa.")
     else:
