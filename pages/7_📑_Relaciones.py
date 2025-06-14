@@ -3,11 +3,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-
-
-# Función para parsear fechas en español sin locale
 def parse_spanish_date(date_str):
-    """Parsea fechas en formato español sin usar locale"""
     if pd.isna(date_str):
         return pd.NaT
     
@@ -43,16 +39,12 @@ def cargar_datos():
         st.info("Asegúrate de que la carpeta 'datasets' esté en el directorio raíz de tu repositorio")
         return None, None, None, None
 
-# Verificar que los datos se carguen correctamente
+
 data_loaded = cargar_datos()
 if data_loaded[0] is None:
     st.stop()
 
 pob_df_raw, defun_df_raw, naci_df_raw, inmig_df_raw = data_loaded
-
-# ---------------------------
-# TRATAMIENTO DE DATOS
-# ---------------------------
 
 try:
     # Defunciones
@@ -89,15 +81,13 @@ try:
     img_df_transpuesto_g['Años'] = pd.to_datetime(img_df_transpuesto_g['Años'].astype(float).astype(int).astype(str), format='%Y')
     img_df_transpuesto_g = img_df_transpuesto_g.set_index('Años')
 
-    # Población - usando función personalizada para fechas en español
+    # Población
     fechas = pob_df_raw.iloc[0, 1:].tolist()
     pob_df_raw.columns = ['Sexo/Grupo de edad'] + fechas
     pob_df_raw = pob_df_raw.drop(index=[0, 1]).reset_index(drop=True)
     pob_df_filtered_g = pob_df_raw.iloc[0:3].copy()
     pob_df_transpuesto_g = pob_df_filtered_g.set_index('Sexo/Grupo de edad').transpose().reset_index()
     pob_df_transpuesto_g.columns = ['Años', 'Ambos sexos', 'Hombres', 'Mujeres']
-    
-    # Aplicar la función personalizada para parsear fechas
     pob_df_transpuesto_g['Años'] = pob_df_transpuesto_g['Años'].apply(parse_spanish_date)
     pob_df_transpuesto_g = pob_df_transpuesto_g.set_index('Años')
 
@@ -116,13 +106,8 @@ try:
         df.loc[julio_mask, 'Nacimientos'] = df['Nacimientos'].shift(1)[julio_mask]
         df.loc[julio_mask, 'Defunciones'] = df['Defunciones'].shift(1)[julio_mask]
     
-    # Verificar que hay datos antes de acceder al último elemento
     if len(df) > 1:
         df.iloc[-1, df.columns.get_loc('Población')] = df.iloc[-2]['Población']
-
-    # ---------------------------
-    # VISUALIZACIONES
-    # ---------------------------
 
     st.title("📊 Indicadores Demográficos: Bubble Chart y Heatmap")
     st.subheader("🔵 Bubble Chart: Población vs Año (Tamaño = Inmigración, Color = Saldo Natural)")

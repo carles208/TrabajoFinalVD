@@ -7,9 +7,7 @@ import altair as alt
 from streamlit_folium import st_folium
 from branca.colormap import linear, LinearColormap
 
-# --- Función de limpieza ---
 def limpiar_indices(df):
-    """Limpia y procesa los índices del DataFrame"""
     if df is None or df.empty:
         return df
     
@@ -23,7 +21,6 @@ def limpiar_indices(df):
 
 @st.cache_data
 def cargar_datos():
-    """Carga todos los datasets con manejo de errores"""
     try:
         # Cargar datos geográficos
         provincias = gpd.read_file('datasets/recintos_provinciales_inspire_peninbal_etrs89.shp').to_crs("EPSG:4326")
